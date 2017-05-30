@@ -236,19 +236,28 @@ void LiquidCrystal::init(uint8_t fourbitmode, uint8_t rs, uint8_t rw, uint8_t en
    _data_pins[6] = d6;
    _data_pins[7] = d7;
    
-   volatile uint8_t* port = portOutputRegister(digitalPinToPort(d0));
-      
-   for (i=0; i<8; i++) {
-	   if (portOutputRegister(digitalPinToPort(_data_pins[i])) != port)
-		   break;
-	   if (digitalPinToBitMask(_data_pins[i]) != 1<<i)
-		   break;
+   if (fourbitmode) {
+       _data_port = NULL;
    }
+   else {
+       // In 8-bit mode, if all the bits are arranged on a single 8-bit port
+       // in the correct order, then we can optimize by writing all 8-bits at once.
+       // We need to check that this is so.
 
-   if (i==8)
-	   _data_port = port;
-   else
-	   _data_port = NULL;
+       volatile uint8_t* port = portOutputRegister(digitalPinToPort(d0));
+   
+       for (i=0; i<8; i++) {
+           if (portOutputRegister(digitalPinToPort(_data_pins[i])) != port)
+               break;
+           if (digitalPinToBitMask(_data_pins[i]) != 1<<i)
+               break;
+       }
+
+       if (i==8)
+           _data_port = port;
+       else
+           _data_port = NULL;
+   }
    
    // Initialize the IO port direction to OUTPUT
    // ------------------------------------------
